@@ -1,3 +1,11 @@
+<script setup lang="ts">
+import { useRoute } from 'vue-router'
+import { computed } from 'vue'
+
+const route = useRoute()
+const isHome = computed(() => route.path === '/')
+</script>
+
 <template>
   <div class="app-background bg-light text-dark min-vh-100 position-relative">
     
@@ -10,18 +18,15 @@
        <div class="position-absolute text-primary watermark-icon floating-slower" style="bottom: 5%; left: 15%; font-size: 15vw; font-weight: 900; line-height: 1; letter-spacing: -1vw;">
          &lt; / &gt;
        </div>
-       <!-- 排球符號 (右上角，增加進場特效與浮動感) -->
+       <!-- 排球符號 -->
        <div class="position-absolute ball-animation-wrapper" style="top: 8%; right: 5%; font-size: 10vw; user-select: none; z-index: 0;">
          <span style="filter: drop-shadow(0 15px 25px rgba(0,0,0,0.1));">🏐</span>
-       </div>
-       <div class="position-absolute text-success watermark-icon floating-slower" style="bottom: -10%; right: 25%; font-size: 25vw;">
-         <i class="bi bi-bullseye"></i>
        </div>
     </div>
 
     <div class="position-relative z-1 d-flex flex-column min-vh-100">
-      <!-- 導覽列：極簡白/透明毛玻璃 -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-white bg-opacity-75 backdrop-blur border-bottom shadow-sm">
+      <!-- 導覽列：固定頂部 + 透明毛玻璃 -->
+      <nav class="navbar navbar-expand-lg navbar-light bg-white bg-opacity-75 backdrop-blur border-bottom shadow-sm fixed-top">
         <div class="container">
           <router-link class="navbar-brand fw-bold text-dark tracking-widest" to="/">我的個人專區</router-link>
           <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#frontendNavbar">
@@ -40,7 +45,8 @@
         </div>
       </nav>
 
-      <main class="flex-grow-1 py-4">
+      <!-- 動態判斷：如果是首頁則不留白，其他頁面自動留出 Navbar 的高度 -->
+      <main :class="['flex-grow-1', isHome ? 'pt-0' : 'pt-navbar']">
         <router-view></router-view>
       </main>
 
@@ -52,10 +58,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-// 全域佈局回歸最高質感的極簡白 (Light Mode)
-</script>
 
 <style scoped>
 .app-background {
@@ -108,5 +110,10 @@
 .backdrop-blur {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+}
+
+/* 避讓 Navbar 的間距 (適用於分頁) */
+.pt-navbar {
+  padding-top: 80px;
 }
 </style>

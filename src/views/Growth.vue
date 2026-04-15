@@ -50,12 +50,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-// 定義目前選取的分類狀態 (all, engineer, volleyball)
-const currentCategory = ref('all')
+gsap.registerPlugin(ScrollTrigger)
 
-// 建立模擬文章資料庫 (Mock Data)
+// ... 保持 posts 與 filteredPosts 不變 ...
 const posts = ref([
   {
     id: 1,
@@ -87,12 +88,47 @@ const posts = ref([
   }
 ])
 
-// 透過 computed 建立自動過濾機制
+const currentCategory = ref('all')
 const filteredPosts = computed(() => {
-  if (currentCategory.value === 'all') {
-    return posts.value
-  }
+  if (currentCategory.value === 'all') return posts.value
   return posts.value.filter(post => post.category === currentCategory.value)
+})
+
+// GSAP 卡片進場動畫 (使用 ScrollTrigger 確保看到才動)
+const animateCards = () => {
+  // 先清除舊的 ScrollTrigger 避免衝突
+  ScrollTrigger.getAll().filter(st => st.vars.trigger === '.card').forEach(st => st.kill())
+  
+  gsap.from('.card', {
+    scrollTrigger: {
+      trigger: '.row',
+      start: 'top 85%'
+    },
+    y: 50,
+    opacity: 0,
+    duration: 0.8,
+    stagger: 0.15,
+    ease: 'power3.out',
+    overwrite: true
+  })
+}
+
+onMounted(async () => {
+  await nextTick()
+  animateCards()
+})
+
+// 當分類改變時，重新觸發動畫
+watch(currentCategory, async () => {
+  await nextTick()
+  // 切換時不需要 ScrollTrigger 觸發標記，直接跑動畫
+  gsap.from('.card', {
+    y: 20,
+    opacity: 0,
+    duration: 0.5,
+    stagger: 0.1,
+    ease: 'power2.out'
+  })
 })
 </script>
 
