@@ -1,9 +1,24 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import { computed } from 'vue'
 
 const route = useRoute()
 const isHome = computed(() => route.path === '/')
+const breadcrumbs = computed(() =>
+  route.matched
+    .filter((record) => record.meta?.title && record.path !== '/')
+    .map((record) => {
+      const rawPath = record.path.startsWith('/')
+        ? record.path
+        : `/${record.path}`
+      const to = rawPath.replace(':slug', String(route.params.slug || ''))
+
+      return {
+        title: String(record.meta.title),
+        to,
+      }
+    }),
+)
 </script>
 
 <template>
@@ -47,6 +62,38 @@ const isHome = computed(() => route.path === '/')
 
       <!-- 動態判斷：如果是首頁則不留白，其他頁面自動留出 Navbar 的高度 -->
       <main :class="['flex-grow-1', isHome ? 'pt-0' : 'pt-navbar']">
+        <div class="container py-3">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+              <li
+                class="breadcrumb-item"
+                :class="{ active: breadcrumbs.length === 0 }"
+                :aria-current="breadcrumbs.length === 0 ? 'page' : undefined"
+              >
+                <RouterLink v-if="breadcrumbs.length > 0" to="/" class="text-decoration-none"
+                  >首頁</RouterLink
+                >
+                <span v-else>首頁</span>
+              </li>
+              <li
+                v-for="(crumb, index) in breadcrumbs"
+                :key="crumb.to"
+                class="breadcrumb-item"
+                :class="{ active: index === breadcrumbs.length - 1 }"
+                :aria-current="index === breadcrumbs.length - 1 ? 'page' : undefined"
+              >
+                <RouterLink
+                  v-if="index !== breadcrumbs.length - 1"
+                  :to="crumb.to"
+                  class="text-decoration-none"
+                >
+                  {{ crumb.title }}
+                </RouterLink>
+                <span v-else>{{ crumb.title }}</span>
+              </li>
+            </ol>
+          </nav>
+        </div>
         <router-view></router-view>
       </main>
 

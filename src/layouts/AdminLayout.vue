@@ -1,5 +1,16 @@
 <script setup lang="ts">
-import { RouterView, RouterLink } from 'vue-router'
+import { computed } from 'vue'
+import { RouterView, RouterLink, useRoute } from 'vue-router'
+
+const route = useRoute()
+const breadcrumbs = computed(() =>
+  route.matched
+    .filter((record) => record.meta?.title)
+    .map((record, index, arr) => ({
+      title: String(record.meta.title),
+      to: index === arr.length - 1 ? route.path : record.path,
+    })),
+)
 </script>
 
 <template>
@@ -61,6 +72,26 @@ import { RouterView, RouterLink } from 'vue-router'
 
       <!-- 主要內容區 -->
       <main class="bg-light p-4 flex-grow-1">
+        <nav aria-label="breadcrumb" class="mb-3">
+          <ol class="breadcrumb mb-0">
+            <li
+              v-for="(crumb, index) in breadcrumbs"
+              :key="`${crumb.title}-${index}`"
+              class="breadcrumb-item"
+              :class="{ active: index === breadcrumbs.length - 1 }"
+              :aria-current="index === breadcrumbs.length - 1 ? 'page' : undefined"
+            >
+              <RouterLink
+                v-if="index !== breadcrumbs.length - 1"
+                :to="crumb.to"
+                class="text-decoration-none"
+              >
+                {{ crumb.title }}
+              </RouterLink>
+              <span v-else>{{ crumb.title }}</span>
+            </li>
+          </ol>
+        </nav>
         <RouterView />
       </main>
     </div>

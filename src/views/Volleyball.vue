@@ -1,11 +1,40 @@
 <script setup lang="ts">
-import { onMounted, nextTick } from 'vue'
+import { onMounted, nextTick, ref } from 'vue'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import axios from 'axios'
+
+interface ArticleItem {
+  id: string
+  title: string
+  img: string | null
+  content: string
+}
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const volleyballArticles = ref<ArticleItem[]>([])
+const isLoading = ref(false)
+const loadError = ref('')
+
+async function fetchArticles() {
+  isLoading.value = true
+  loadError.value = ''
+
+  try {
+    const response = await axios.get<{ data: ArticleItem[] }>(`${API_BASE}/articles`)
+    volleyballArticles.value = response.data.data
+  } catch (error) {
+    console.error(error)
+    loadError.value = '文章載入失敗，請稍後再試。'
+  } finally {
+    isLoading.value = false
+  }
+}
 
 gsap.registerPlugin(ScrollTrigger)
 
 onMounted(async () => {
+  await fetchArticles()
   await nextTick()
   
   // 1. 頂部標題進場
@@ -54,40 +83,24 @@ onMounted(async () => {
 
     <!-- 經歷與能力 -->
     <div class="row mb-10 stat-row">
-      <div class="col-md-6 mb-4 stat-card">
-        <div class="card h-100 shadow-sm border-0 rounded-5 transition-hover">
-          <div class="card-body p-5">
-            <h4 class="fw-black border-bottom border-primary border-opacity-25 pb-3 mb-4 letter-spacing-2">個人能力指標</h4>
-            <ul class="list-group list-group-flush border-0">
-              <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent py-3">
-                <span class="text-secondary">身高 / 體重</span> <span class="fw-bold fs-5">182 cm / 75 kg</span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent py-3">
-                <span class="text-secondary">打點高</span> <span class="fw-bold fs-5 text-primary">320 cm</span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent py-3 border-0">
-                <span class="text-secondary">場上位置</span> <span class="badge bg-primary rounded-pill px-3 py-2 fw-bold">主攻手 (OH)</span>
-              </li>
-            </ul>
-             <p class="mt-4 text-secondary small lh-lg bg-light p-3 rounded-4">
-               優異的滯空能力與攻擊視野，具備強大的關鍵時刻得分能力。防守拼勁強，能穩定參與一傳體系。
-             </p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6 mb-4 stat-card">
+      <div class="col-md-12 mb-4 stat-card">
         <div class="card h-100 shadow-sm border-0 rounded-5 transition-hover">
           <div class="card-body p-5">
             <h4 class="fw-black border-bottom border-primary border-opacity-25 pb-3 mb-4 letter-spacing-2">重點賽事經歷</h4>
             <div class="mt-2">
-              <div class="experience-item mb-4 ps-3 border-start border-3 border-primary">
-                <h5 class="fw-bold mb-1">大專盃甲級聯賽</h5>
-                <p class="text-secondary small mb-0">先發主攻手 / 負責戰術執行與防守核心。帶領球隊闖入全國八強。</p>
-              </div>
-              <div class="experience-item mb-0 ps-3 border-start border-3 border-primary border-opacity-50">
-                <h5 class="fw-bold mb-1">全國排球錦標賽</h5>
-                <p class="text-secondary small mb-0">年度全國大型賽事 / 多次在決勝局貢獻關鍵攔網與重扣得分。</p>
-              </div>
+              <p v-if="isLoading" class="text-secondary mb-0">載入文章中...</p>
+              <p v-else-if="loadError" class="text-danger mb-0">{{ loadError }}</p>
+              <router-link
+                v-for="article in volleyballArticles"
+                :key="article.id"
+                :to="`/volleyball/${article.id}`"
+                class="experience-item d-block mb-3 ps-3 pe-2 py-2 border-start border-3 border-primary text-decoration-none rounded-3"
+              >
+                <h5 class="fw-bold mb-1 text-dark">{{ article.title }}</h5>
+                <p class="text-secondary small mb-0">
+                  {{ article.content.slice(0, 45) }}{{ article.content.length > 45 ? '...' : '' }}
+                </p>
+              </router-link>
             </div>
           </div>
         </div>
