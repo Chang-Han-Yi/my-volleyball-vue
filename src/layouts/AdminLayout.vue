@@ -23,12 +23,7 @@ const breadcrumbs = computed(() =>
       <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item mb-2">
           <RouterLink to="/admin/dashboard" class="nav-link text-white" exact-active-class="active bg-secondary">
-            儀表板 (Dashboard)
-          </RouterLink>
-        </li>
-        <li class="nav-item mb-2">
-          <RouterLink to="/admin/create-post" class="nav-link text-white" exact-active-class="active bg-secondary">
-            新增文章 (CMS)
+            文章管理
           </RouterLink>
         </li>
         <li class="nav-item mb-2">

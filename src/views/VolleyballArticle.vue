@@ -69,7 +69,9 @@ watch(() => route.params.slug, fetchArticle)
     <div v-else class="text-center py-10">
       <h2 class="fw-black mb-3">找不到這篇賽事文章</h2>
       <p v-if="loadError" class="text-danger">{{ loadError }}</p>
-      <router-link to="/volleyball" class="btn btn-primary rounded-pill px-4">回到排球專區</router-link>
+      <router-link to="/volleyball" class="btn btn-primary rounded-pill px-4"
+        >回到排球專區</router-link
+      >
     </div>
   </div>
 </template>

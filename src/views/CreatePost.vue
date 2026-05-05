@@ -1,19 +1,85 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import axios from 'axios'
+import { createArticle, uploadImage } from '@/lib/api'
 
-// 定義表單資料綁定模型，這也將是未來 API 傳送的 Payload 結構
 const postForm = ref({
   title: '',
-  category: 'news',
-  status: 'draft',
   content: '',
-  isPinned: false
+  img: '',
+  isPublished: false,
 })
 
-const submitPost = () => {
-  // 開發測試用，確認資料綁定狀態
-  console.log('準備向 API 寄送的 Payload:', postForm.value)
-  alert('資料已成功搜集並列印至 Console，待後續串接真實 API。')
+const isSubmitting = ref(false)
+const isUploadingImage = ref(false)
+const errorMessage = ref('')
+const successMessage = ref('')
+
+function resetForm() {
+  postForm.value = {
+    title: '',
+    content: '',
+    img: '',
+    isPublished: false,
+  }
+}
+
+async function submitPost() {
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  const title = postForm.value.title.trim()
+  const content = postForm.value.content.trim()
+  const img = postForm.value.img.trim()
+
+  if (!title || !content) {
+    errorMessage.value = '請輸入標題與內文。'
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    await createArticle({
+      id: crypto.randomUUID(),
+      title,
+      content,
+      img: img || null,
+      isPublished: postForm.value.isPublished,
+    })
+    successMessage.value = postForm.value.isPublished ? '文章已上架。' : '文章已建立為草稿，尚未上架。'
+    resetForm()
+  } catch (error) {
+    console.error(error)
+    errorMessage.value = '文章建立失敗，請確認 API 與資料庫狀態。'
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+async function onSelectImage(event: Event) {
+  const input = event.target as HTMLInputElement
+  const selected = input.files?.[0]
+  if (!selected) return
+
+  errorMessage.value = ''
+  successMessage.value = ''
+  isUploadingImage.value = true
+  try {
+    const url = await uploadImage(selected)
+    postForm.value.img = url
+    successMessage.value = '圖片上傳成功。'
+  } catch (error) {
+    console.error(error)
+    if (axios.isAxiosError(error)) {
+      const serverMessage = (error.response?.data as { message?: string } | undefined)?.message
+      errorMessage.value = serverMessage || '圖片上傳失敗，請稍後再試。'
+    } else {
+      errorMessage.value = '圖片上傳失敗，請稍後再試。'
+    }
+  } finally {
+    isUploadingImage.value = false
+    input.value = ''
+  }
 }
 </script>
 
@@ -22,10 +88,16 @@ const submitPost = () => {
     <!-- 頁面標題與動作按鈕 -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2 class="h3 mb-0 text-dark fw-bold">新增排球文章</h2>
-      <div>
-        <button class="btn btn-outline-secondary me-2 px-4">儲存草稿</button>
-        <button class="btn btn-primary px-4 fw-semibold" @click="submitPost">發布文章</button>
-      </div>
+      <button class="btn btn-primary px-4 fw-semibold" :disabled="isSubmitting" @click="submitPost">
+        {{ isSubmitting ? '建立中...' : '建立文章' }}
+      </button>
+    </div>
+
+    <div v-if="errorMessage" class="alert alert-danger" role="alert">
+      {{ errorMessage }}
+    </div>
+    <div v-if="successMessage" class="alert alert-success" role="alert">
+      {{ successMessage }}
     </div>
 
     <div class="row g-4">
@@ -37,25 +109,25 @@ const submitPost = () => {
               <label for="postTitle" class="form-label fw-bold text-secondary">
                 文章標題 <span class="text-danger">*</span>
               </label>
-              <input 
-                type="text" 
-                class="form-control form-control-lg bg-light border-0" 
-                id="postTitle" 
-                v-model="postForm.title" 
+              <input
+                type="text"
+                class="form-control form-control-lg bg-light border-0"
+                id="postTitle"
+                v-model="postForm.title"
                 placeholder="請輸入抓人眼球的賽事標題..."
-              >
+              />
             </div>
-            
+
             <div class="mb-3">
               <label for="postContent" class="form-label fw-bold text-secondary">
                 文章內文 <span class="text-danger">*</span>
               </label>
               <!-- 預留區塊：此處的 textarea 日後會被取代為富文本編輯器 -->
-              <textarea 
-                class="form-control bg-light border-0" 
-                id="postContent" 
-                rows="15" 
-                v-model="postForm.content" 
+              <textarea
+                class="form-control bg-light border-0"
+                id="postContent"
+                rows="15"
+                v-model="postForm.content"
                 placeholder="請在此輸入文章內容。&#10;（技術標記：此欄位日後將引入富文本編輯器，產出帶有 HTML 標籤的字串）"
               ></textarea>
             </div>
@@ -63,48 +135,41 @@ const submitPost = () => {
         </div>
       </div>
 
-      <!-- 右側：發布設定與屬性 -->
       <div class="col-lg-4">
-        <!-- 屬性設定卡片 -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-white py-3 border-light">
-            <h6 class="mb-0 fw-bold text-dark">發布選項</h6>
+            <h6 class="mb-0 fw-bold text-dark">文章設定</h6>
           </div>
           <div class="card-body p-4">
             <div class="mb-4">
-              <label class="form-label fw-semibold text-secondary">文章狀態</label>
-              <select class="form-select bg-light border-0" v-model="postForm.status">
-                <option value="draft">📝 草稿 (Draft)</option>
-                <option value="published">✅ 已發布 (Published)</option>
-                <option value="hidden">👁️ 隱藏 (Hidden)</option>
-              </select>
+              <label class="form-label fw-semibold text-secondary" for="postImage">封面圖片 URL</label>
+              <input
+                id="postImage"
+                v-model="postForm.img"
+                type="url"
+                class="form-control bg-light border-0"
+                placeholder="https://example.com/cover.jpg"
+              />
+              <div class="mt-2 d-flex align-items-center gap-2">
+                <input id="uploadImageFile" type="file" class="form-control" accept="image/*" @change="onSelectImage" />
+              </div>
+              <div class="form-text">
+                {{ isUploadingImage ? '圖片上傳中...' : '可直接選檔上傳，成功後會自動填入 URL。' }}
+              </div>
             </div>
-            <div class="mb-4">
-              <label class="form-label fw-semibold text-secondary">文章分類</label>
-              <select class="form-select bg-light border-0" v-model="postForm.category">
-                <option value="news">最新消息</option>
-                <option value="match_result">賽事結果</option>
-                <option value="announcement">官方公告</option>
-              </select>
-            </div>
-            <div class="form-check form-switch mt-4 pt-3 border-top">
-              <input class="form-check-input" type="checkbox" role="switch" id="pinnedSwitch" v-model="postForm.isPinned">
-              <label class="form-check-label fw-semibold text-dark ms-2" for="pinnedSwitch">將此文章置頂於前台列表</label>
+            <div class="form-check mt-3">
+              <input id="publishedSwitch" v-model="postForm.isPublished" class="form-check-input" type="checkbox" />
+              <label class="form-check-label text-secondary" for="publishedSwitch">建立後立即上架</label>
             </div>
           </div>
         </div>
 
-        <!-- 封面圖片 (預留概念區塊) -->
         <div class="card border-0 shadow-sm mb-4">
           <div class="card-header bg-white py-3 border-light">
-            <h6 class="mb-0 fw-bold text-dark">封面主視覺</h6>
+            <h6 class="mb-0 fw-bold text-dark">提示</h6>
           </div>
-          <div class="card-body text-center p-4">
-            <div class="border border-2 rounded p-5 text-muted bg-light upload-area">
-              <code class="d-block mb-2">Image Upload Area</code>
-              <small>點擊或拖放圖片至此處上傳</small>
-            </div>
-            <div class="form-text mt-3">建議尺寸：1200 x 630 px (支援 JPG, PNG, WebP)</div>
+          <div class="card-body p-4 text-secondary">
+            目前後台使用 API 直接建立文章。若不提供圖片 URL，前台將不顯示封面圖。
           </div>
         </div>
       </div>
@@ -112,15 +177,4 @@ const submitPost = () => {
   </div>
 </template>
 
-<style scoped>
-.upload-area {
-  border-style: dashed !important;
-  cursor: pointer;
-}
-
-/* 針對開關按鈕做微調放大 */
-.form-switch .form-check-input {
-  width: 2.5em;
-  height: 1.25em;
-}
-</style>
+<style scoped></style>
