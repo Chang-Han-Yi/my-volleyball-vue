@@ -61,3 +61,14 @@ export async function uploadImage(file: File): Promise<string> {
   })
   return data.url
 }
+
+/** 從後端 JSON 錯誤取出訊息，供表單顯示用 */
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { message?: string } | undefined
+    if (typeof data?.message === 'string' && data.message.trim()) {
+      return data.message
+    }
+  }
+  return fallback
+}

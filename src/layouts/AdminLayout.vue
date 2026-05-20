@@ -18,7 +18,7 @@ const breadcrumbs = computed(() =>
     <!-- 側邊欄 -->
     <aside class="bg-dark text-white p-3 d-flex flex-column admin-sidebar">
       <div class="fs-4 fw-bold text-center border-bottom border-secondary pb-3 mb-3">
-        管理後台系統
+        張翰浥的個人專區
       </div>
       <ul class="nav nav-pills flex-column mb-auto">
         <li class="nav-item mb-2">

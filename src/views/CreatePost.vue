@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import axios from 'axios'
-import { createArticle, uploadImage } from '@/lib/api'
+import { createArticle, getApiErrorMessage, uploadImage } from '@/lib/api'
 
 const postForm = ref({
   title: '',
@@ -46,7 +45,9 @@ async function submitPost() {
       img: img || null,
       isPublished: postForm.value.isPublished,
     })
-    successMessage.value = postForm.value.isPublished ? '文章已上架。' : '文章已建立為草稿，尚未上架。'
+    successMessage.value = postForm.value.isPublished
+      ? '文章已上架。'
+      : '文章已建立為草稿，尚未上架。'
     resetForm()
   } catch (error) {
     console.error(error)
@@ -70,12 +71,7 @@ async function onSelectImage(event: Event) {
     successMessage.value = '圖片上傳成功。'
   } catch (error) {
     console.error(error)
-    if (axios.isAxiosError(error)) {
-      const serverMessage = (error.response?.data as { message?: string } | undefined)?.message
-      errorMessage.value = serverMessage || '圖片上傳失敗，請稍後再試。'
-    } else {
-      errorMessage.value = '圖片上傳失敗，請稍後再試。'
-    }
+    errorMessage.value = getApiErrorMessage(error, '圖片上傳失敗，請稍後再試。')
   } finally {
     isUploadingImage.value = false
     input.value = ''
@@ -85,7 +81,6 @@ async function onSelectImage(event: Event) {
 
 <template>
   <div class="container-fluid">
-    <!-- 頁面標題與動作按鈕 -->
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2 class="h3 mb-0 text-dark fw-bold">新增排球文章</h2>
       <button class="btn btn-primary px-4 fw-semibold" :disabled="isSubmitting" @click="submitPost">
@@ -101,7 +96,6 @@ async function onSelectImage(event: Event) {
     </div>
 
     <div class="row g-4">
-      <!-- 左側：主要內容區段 (標題與內文) -->
       <div class="col-lg-8">
         <div class="card border-0 shadow-sm mb-4 h-100">
           <div class="card-body p-4">
@@ -114,7 +108,6 @@ async function onSelectImage(event: Event) {
                 class="form-control form-control-lg bg-light border-0"
                 id="postTitle"
                 v-model="postForm.title"
-                placeholder="請輸入抓人眼球的賽事標題..."
               />
             </div>
 
@@ -122,14 +115,12 @@ async function onSelectImage(event: Event) {
               <label for="postContent" class="form-label fw-bold text-secondary">
                 文章內文 <span class="text-danger">*</span>
               </label>
-              <!-- 預留區塊：此處的 textarea 日後會被取代為富文本編輯器 -->
               <textarea
                 class="form-control bg-light border-0"
                 id="postContent"
                 rows="15"
                 v-model="postForm.content"
-                placeholder="請在此輸入文章內容。&#10;（技術標記：此欄位日後將引入富文本編輯器，產出帶有 HTML 標籤的字串）"
-              ></textarea>
+              />
             </div>
           </div>
         </div>
@@ -142,23 +133,25 @@ async function onSelectImage(event: Event) {
           </div>
           <div class="card-body p-4">
             <div class="mb-4">
-              <label class="form-label fw-semibold text-secondary" for="postImage">封面圖片 URL</label>
+              <label class="form-label fw-semibold text-secondary" for="uploadImageFile">封面圖片</label>
               <input
-                id="postImage"
-                v-model="postForm.img"
-                type="url"
+                id="uploadImageFile"
+                type="file"
                 class="form-control bg-light border-0"
-                placeholder="https://example.com/cover.jpg"
+                accept="image/*"
+                @change="onSelectImage"
               />
-              <div class="mt-2 d-flex align-items-center gap-2">
-                <input id="uploadImageFile" type="file" class="form-control" accept="image/*" @change="onSelectImage" />
-              </div>
               <div class="form-text">
-                {{ isUploadingImage ? '圖片上傳中...' : '可直接選檔上傳，成功後會自動填入 URL。' }}
+                {{ isUploadingImage ? '圖片上傳中...' : '選檔上傳後會自動產生網址並存成封面，無需手動貼網址。' }}
               </div>
             </div>
             <div class="form-check mt-3">
-              <input id="publishedSwitch" v-model="postForm.isPublished" class="form-check-input" type="checkbox" />
+              <input
+                id="publishedSwitch"
+                v-model="postForm.isPublished"
+                class="form-check-input"
+                type="checkbox"
+              />
               <label class="form-check-label text-secondary" for="publishedSwitch">建立後立即上架</label>
             </div>
           </div>
@@ -169,12 +162,10 @@ async function onSelectImage(event: Event) {
             <h6 class="mb-0 fw-bold text-dark">提示</h6>
           </div>
           <div class="card-body p-4 text-secondary">
-            目前後台使用 API 直接建立文章。若不提供圖片 URL，前台將不顯示封面圖。
+            未上傳封面時，前台文章頁不顯示圖片區塊。
           </div>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped></style>

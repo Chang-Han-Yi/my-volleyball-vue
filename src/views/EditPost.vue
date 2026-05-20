@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import axios from 'axios'
 import { useRoute, useRouter } from 'vue-router'
-import { getArticle, updateArticle, uploadImage } from '@/lib/api'
+import { getApiErrorMessage, getArticle, updateArticle, uploadImage } from '@/lib/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -68,7 +67,9 @@ async function submitEdit() {
       img: img || null,
       isPublished: form.value.isPublished,
     })
-    successMessage.value = form.value.isPublished ? '文章更新成功，已上架。' : '文章更新成功，目前為草稿。'
+    successMessage.value = form.value.isPublished
+      ? '文章更新成功，已上架。'
+      : '文章更新成功，目前為草稿。'
   } catch (error) {
     console.error(error)
     errorMessage.value = '更新失敗，請稍後再試。'
@@ -95,12 +96,7 @@ async function onSelectImage(event: Event) {
     successMessage.value = '圖片上傳成功。'
   } catch (error) {
     console.error(error)
-    if (axios.isAxiosError(error)) {
-      const serverMessage = (error.response?.data as { message?: string } | undefined)?.message
-      errorMessage.value = serverMessage || '圖片上傳失敗，請稍後再試。'
-    } else {
-      errorMessage.value = '圖片上傳失敗，請稍後再試。'
-    }
+    errorMessage.value = getApiErrorMessage(error, '圖片上傳失敗，請稍後再試。')
   } finally {
     isUploadingImage.value = false
     input.value = ''
@@ -133,19 +129,31 @@ onMounted(fetchArticle)
           <input v-model="form.title" type="text" class="form-control" />
         </div>
         <div class="mb-3">
-          <label class="form-label fw-semibold">封面圖 URL</label>
-          <input v-model="form.img" type="url" class="form-control" />
-          <input type="file" class="form-control mt-2" accept="image/*" @change="onSelectImage" />
+          <label class="form-label fw-semibold">封面圖片</label>
+          <input type="file" class="form-control" accept="image/*" @change="onSelectImage" />
           <div class="form-text">
-            {{ isUploadingImage ? '圖片上傳中...' : '可直接選檔上傳，成功後會自動填入 URL。' }}
+            {{ isUploadingImage ? '圖片上傳中...' : '選檔上傳後會自動產生網址並更新封面。' }}
           </div>
+          <label class="form-label fw-semibold small mt-3 mb-1" for="editCoverUrl">或手動貼上圖片網址（選填）</label>
+          <input
+            id="editCoverUrl"
+            v-model="form.img"
+            type="url"
+            class="form-control"
+            placeholder="外部圖床或先前上傳產生的網址"
+          />
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold">內文</label>
           <textarea v-model="form.content" rows="10" class="form-control"></textarea>
         </div>
         <div class="form-check mb-3">
-          <input id="editPublishedSwitch" v-model="form.isPublished" class="form-check-input" type="checkbox" />
+          <input
+            id="editPublishedSwitch"
+            v-model="form.isPublished"
+            class="form-check-input"
+            type="checkbox"
+          />
           <label class="form-check-label" for="editPublishedSwitch">上架文章（關閉則為草稿）</label>
         </div>
         <button class="btn btn-primary" :disabled="isSubmitting" @click="submitEdit">

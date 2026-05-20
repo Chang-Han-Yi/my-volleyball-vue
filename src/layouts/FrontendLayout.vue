@@ -1,24 +1,41 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
 import { computed } from 'vue'
+import SiteNavbar from '@/components/layout/SiteNavbar.vue'
 
 const route = useRoute()
 const isHome = computed(() => route.path === '/')
-const breadcrumbs = computed(() =>
-  route.matched
-    .filter((record) => record.meta?.title && record.path !== '/')
-    .map((record) => {
-      const rawPath = record.path.startsWith('/')
-        ? record.path
-        : `/${record.path}`
-      const to = rawPath.replace(':slug', String(route.params.slug || ''))
+const showBreadcrumb = computed(() => route.path !== '/')
 
-      return {
-        title: String(record.meta.title),
-        to,
-      }
-    }),
-)
+const breadcrumbs = computed(() => {
+  const items: { title: string; to: string }[] = []
+  const section = route.meta.section as string | undefined
+  const layerTitle = route.meta.layerTitle as string | undefined
+
+  if (section) {
+    const sectionPaths: Record<string, string> = {
+      about: '/about',
+      experience: '/experience',
+      content: '/content',
+      contact: '/contact',
+    }
+    const sectionTitles: Record<string, string> = {
+      about: '關於',
+      experience: '經歷',
+      content: '內容',
+      contact: '聯絡',
+    }
+    items.push({
+      title: sectionTitles[section] || String(route.meta.title),
+      to: sectionPaths[section] || `/${section}`,
+    })
+    if (layerTitle && layerTitle !== '總覽') {
+      items.push({ title: layerTitle, to: route.path })
+    }
+  }
+
+  return items
+})
 </script>
 
 <template>
@@ -40,44 +57,19 @@ const breadcrumbs = computed(() =>
     </div>
 
     <div class="position-relative z-1 d-flex flex-column min-vh-100">
-      <!-- 導覽列：固定頂部 + 透明毛玻璃 -->
-      <nav class="navbar navbar-expand-lg navbar-light bg-white bg-opacity-75 backdrop-blur border-bottom shadow-sm fixed-top">
-        <div class="container">
-          <router-link class="navbar-brand fw-bold text-dark tracking-widest" to="/">我的個人專區</router-link>
-          <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#frontendNavbar">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="frontendNavbar">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-              <li class="nav-item"><router-link class="nav-link text-secondary px-3" active-class="active fw-bold text-dark" to="/" exact>首頁</router-link></li>
-              <li class="nav-item"><router-link class="nav-link text-secondary px-3" active-class="active fw-bold text-dark" to="/volleyball">排球</router-link></li>
-              <li class="nav-item"><router-link class="nav-link text-secondary px-3" active-class="active fw-bold text-dark" to="/engineer">工程師</router-link></li>
-              <li class="nav-item"><router-link class="nav-link text-secondary px-3" active-class="active fw-bold text-dark" to="/growth">成長</router-link></li>
-              <li class="nav-item"><router-link class="nav-link text-secondary px-3" active-class="active fw-bold text-dark" to="/projects">作品</router-link></li>
-              <li class="nav-item"><router-link class="nav-link text-secondary px-3" active-class="active fw-bold text-dark" to="/contact">聯絡</router-link></li>
-            </ul>
-          </div>
-        </div>
-      </nav>
+      <SiteNavbar />
 
       <!-- 動態判斷：如果是首頁則不留白，其他頁面自動留出 Navbar 的高度 -->
       <main :class="['flex-grow-1', isHome ? 'pt-0' : 'pt-navbar']">
-        <div class="container py-3">
+        <div v-if="showBreadcrumb" class="container py-3">
           <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-              <li
-                class="breadcrumb-item"
-                :class="{ active: breadcrumbs.length === 0 }"
-                :aria-current="breadcrumbs.length === 0 ? 'page' : undefined"
-              >
-                <RouterLink v-if="breadcrumbs.length > 0" to="/" class="text-decoration-none"
-                  >首頁</RouterLink
-                >
-                <span v-else>首頁</span>
+              <li class="breadcrumb-item">
+                <RouterLink to="/" class="text-decoration-none">首頁</RouterLink>
               </li>
               <li
                 v-for="(crumb, index) in breadcrumbs"
-                :key="crumb.to"
+                :key="`${crumb.to}-${index}`"
                 class="breadcrumb-item"
                 :class="{ active: index === breadcrumbs.length - 1 }"
                 :aria-current="index === breadcrumbs.length - 1 ? 'page' : undefined"
@@ -99,7 +91,7 @@ const breadcrumbs = computed(() =>
 
       <footer class="bg-white text-secondary text-center py-4 mt-auto border-top">
         <div class="container">
-          <p class="mb-0 small">&copy; {{ new Date().getFullYear() }} 雙棲開發者. All rights reserved.</p>
+          <p class="mb-0 small">&copy; {{ new Date().getFullYear() }} 張翰浥的個人專區. All rights reserved.</p>
         </div>
       </footer>
     </div>
@@ -152,11 +144,6 @@ const breadcrumbs = computed(() =>
 @keyframes ballFloat {
   0% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
   100% { transform: translateY(-60px) rotate(15deg); opacity: 0.6; }
-}
-
-.backdrop-blur {
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
 /* 避讓 Navbar 的間距 (適用於分頁) */

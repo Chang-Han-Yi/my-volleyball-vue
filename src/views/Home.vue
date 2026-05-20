@@ -64,8 +64,8 @@
               十餘年的排球生涯，教會我的不只是擊球，而是如何在比分落後時保持冷靜。當我踏入軟體工程的世界時，我發現邏輯的背後也需要同樣的爆發力與韌性。
             </p>
             <div class="gsap-reveal-up">
-              <router-link to="/engineer" class="btn btn-dark rounded-0 px-5 py-3 fw-bold"
-                >閱讀完整故事</router-link
+              <router-link to="/about" class="btn btn-dark rounded-0 px-5 py-3 fw-bold"
+                >認識我</router-link
               >
             </div>
           </div>
@@ -154,8 +154,8 @@
           </div>
         </div>
         <div class="mt-5 text-center">
-          <router-link to="/volleyball" class="btn btn-outline-light rounded-pill px-5"
-            >探索更多排球日常 <i class="bi bi-arrow-right ms-2"></i
+          <router-link to="/content/volleyball" class="btn btn-outline-light rounded-pill px-5"
+            >探索排球內容 <i class="bi bi-arrow-right ms-2"></i
           ></router-link>
         </div>
       </div>
